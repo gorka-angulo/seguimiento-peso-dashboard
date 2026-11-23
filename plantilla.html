@@ -20,6 +20,9 @@
     }
   }
   * { box-sizing: border-box; }
+  /* Ocultar TODAS las barras de desplazamiento (se sigue pudiendo hacer scroll con la rueda) */
+  * { scrollbar-width: none; }                       /* estándar: Firefox y Chrome modernos */
+  ::-webkit-scrollbar { display: none; width: 0; height: 0; }  /* Chromium antiguo / app de Notion */
   body { margin: 0; padding: 20px; background: var(--fondo); color: var(--texto);
          font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   .sp { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
