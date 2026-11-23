@@ -56,6 +56,9 @@
   details { font-size: 13px; color: var(--suave); }
   details ul { margin: 8px 0 0; padding-left: 18px; }
   footer { font-size: 12px; color: var(--suave); }
+  /* Dentro de Notion (iframe): usar todo el ancho del bloque y márgenes pequeños */
+  body.embed { padding: 8px 4px 24px; }
+  body.embed .sp { max-width: none; }
 </style>
 </head>
 <body>
@@ -330,6 +333,9 @@ function pintarTabla() {
 // =====================================================================
 // 8. ARRANQUE
 // =====================================================================
+// ¿Estamos incrustados (en Notion)? Dentro de un iframe, self (esta ventana) no es top (la principal)
+if (window.self !== window.top) document.body.classList.add('embed');
+
 const sel = document.getElementById('medida');
 Object.entries(MEDIDAS).forEach(([m, cfg]) => sel.append(el('option', {value: m}, cfg.label + (cfg.unit ? ' (' + cfg.unit + ')' : ''))));
 sel.addEventListener('change', () => { medidaSel = sel.value; pintarGrafico(); });
