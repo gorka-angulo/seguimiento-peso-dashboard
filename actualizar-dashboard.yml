@@ -1,0 +1,66 @@
+name: Actualizar dashboard
+
+on:
+  schedule:
+    - cron: "17 5 * * *"     # todos los días a las 05:17 UTC (06:17/07:17 en Bilbao)
+  workflow_dispatch:          # botón "Run workflow" para lanzarlo a mano
+  push:
+    branches: [main]          # y cada vez que subas cambios al código
+
+permissions:
+  contents: read
+  pages: write                # para publicar en GitHub Pages
+  id-token: write             # lo exige deploy-pages
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  generar-y-publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Generar docs/index.html desde Notion
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+        run: python generar_dashboard.py
+
+      - name: Cifrar con StatiCrypt (contraseña)
+        env:
+          STATICRYPT_PASSWORD: ${{ secrets.STATICRYPT_PASSWORD }}
+        run: |
+          test -f .staticrypt.json || { echo "Falta .staticrypt.json (la sal) en el repo"; exit 1; }
+          test -n "$STATICRYPT_PASSWORD" || { echo "Falta el secreto STATICRYPT_PASSWORD"; exit 1; }
+          npx -y staticrypt@3 docs/index.html -d docs --remember 90 --short \
+            --template-title "Seguimiento del peso" --template-button "ENTRAR" \
+            --template-placeholder "Contraseña" --template-error "Contraseña incorrecta" \
+            --template-remember "Recordarme en este dispositivo" \
+            --template-color-primary "#2f6fdf" --template-color-secondary "#191919"
+
+      - name: Comprobar que está cifrado (red de seguridad)
+        run: |
+          grep -q staticrypt docs/index.html || { echo "index.html SIN cifrar, no se publica"; exit 1; }
+
+      - name: Preparar la web
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Publicar en GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
